@@ -64,9 +64,9 @@ pub struct GenesisCommand {
     pub ord_batch_size: Option<usize>,
     #[clap(
         long,
-        help = "outpoint(original):inscriptions(original inscription_id) map dump path, for debug"
+        help = "outpoint(original):inscriptions(original inscription_id) map dump path, for debug and reload"
     )]
-    pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
+    pub outpoint_inscriptions_map_dump_path: PathBuf,
     #[clap(
         long,
         help = "only map outpoint to inscriptions, do not import inscriptions"
@@ -96,18 +96,17 @@ impl GenesisCommand {
         let pre_root_state_root = root.state_root();
 
         log::info!("indexing and dumping outpoint_inscriptions_map...");
-        let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
-            OutpointInscriptionsMap::index_and_dump(
-                self.ord_source.clone(),
-                self.outpoint_inscriptions_map_dump_path.clone(),
-            );
-        println!(
-            "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
-            mapped_outpoint,
-            mapped_inscription,
-            start_time.elapsed(),
-            unbound_count
+
+        let outpoint_inscriptions_map = OutpointInscriptionsMap::load_or_index(
+            self.outpoint_inscriptions_map_dump_path.clone(),
+            Some(self.ord_source.clone()),
         );
+
+        log::info!(
+            "indexing and dumping outpoint_inscriptions_map done, cost: {:?}",
+            start_time.elapsed()
+        );
+
         if self.map_outpoint_inscriptions_only {
             return Ok(());
         }
